@@ -9,17 +9,26 @@ export default function LocationSelector() {
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
 
-  // Step 3: Fetch countries on mount
+  const [countryError, setCountryError] = useState("");
+
+  // Fetch countries on mount
   useEffect(() => {
     async function fetchCountries() {
-      const res = await fetch("https://location-selector.labs.crio.do/countries");
-      const data = await res.json();
-      setCountries(data);
+      try {
+        const res = await fetch("https://location-selector.labs.crio.do/countries");
+        if (!res.ok) throw new Error("Network response was not ok");
+        const data = await res.json();
+        setCountries(data);
+      } catch (error) {
+        console.error("Error fetching countries:", error);
+        setCountryError("Failed to load countries. Please try again.");
+        setCountries([]);
+      }
     }
     fetchCountries();
   }, []);
 
-  // Step 4: Handle country selection
+  // Handle country selection
   const handleCountryChange = async (e) => {
     const country = e.target.value;
     setSelectedCountry(country);
@@ -28,31 +37,45 @@ export default function LocationSelector() {
     setStates([]);
     setCities([]);
 
-    const res = await fetch(`https://location-selector.labs.crio.do/country=${country}/states`);
-    const data = await res.json();
-    setStates(data);
+    try {
+      const res = await fetch(`https://location-selector.labs.crio.do/country=${country}/states`);
+      if (!res.ok) throw new Error("Failed to fetch states");
+      const data = await res.json();
+      setStates(data);
+    } catch (error) {
+      console.error("Error fetching states:", error);
+      setStates([]);
+    }
   };
 
-  // Step 5: Handle state selection
+  // Handle state selection
   const handleStateChange = async (e) => {
     const state = e.target.value;
     setSelectedState(state);
     setSelectedCity("");
     setCities([]);
 
-    const res = await fetch(`https://location-selector.labs.crio.do/country=${selectedCountry}/state=${state}/cities`);
-    const data = await res.json();
-    setCities(data);
+    try {
+      const res = await fetch(`https://location-selector.labs.crio.do/country=${selectedCountry}/state=${state}/cities`);
+      if (!res.ok) throw new Error("Failed to fetch cities");
+      const data = await res.json();
+      setCities(data);
+    } catch (error) {
+      console.error("Error fetching cities:", error);
+      setCities([]);
+    }
   };
 
-  // Step 6: Handle city selection
+  // Handle city selection
   const handleCityChange = (e) => {
     setSelectedCity(e.target.value);
   };
 
   return (
     <div>
-      <select value={selectedCountry} onChange={handleCountryChange}>
+      {countryError && <p style={{ color: "red" }}>{countryError}</p>}
+
+      <select value={selectedCountry} onChange={handleCountryChange} disabled={!!countryError}>
         <option value="">Select Country</option>
         {countries.map(c => (
           <option key={c} value={c}>{c}</option>
